@@ -1,0 +1,14 @@
+node_modules/
+dist/
+.artifacts/
+*.tsbuildinfo
+/docs/PLATFORM-NOTES.md
+/docs/TESTING.md
+/ARCH.md
+/RESEARCH.md
+/REUSE-ASSESSMENT.md
+/SKIPIT-ISSUE-DRAFT.md
+/SPEC-v0.md
+.idea/
+.pnpm-store/
+/examples/
