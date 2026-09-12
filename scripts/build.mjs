@@ -1,9 +1,10 @@
-import { cp, mkdir } from "node:fs/promises";
+import { cp, mkdir, rm } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { build } from "esbuild";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
 const output = fileURLToPath(new URL("../dist/", import.meta.url));
+await rm(output, { recursive: true, force: true });
 await mkdir(output, { recursive: true });
 await cp(new URL("../public/", import.meta.url), output, { recursive: true });
 await cp(new URL("../LICENSE", import.meta.url), new URL("../dist/LICENSE", import.meta.url));
