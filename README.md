@@ -11,7 +11,7 @@ Netflix is the current validation target. Prime Video and YouTube features will 
 - **Netflix player overlays:** independently show the current timestamp and highlight loaded skip segments above the native seek bar. Overlay switches and the loaded filename are restored when reopening the popup.
 - **Netflix SRT loading:** select a file to automatically skip its ranges. The popup shows its filename, segment count and current skip setting.
 - **Enable / disable skipping:** use the button beside the file summary. The file and setting stay in the video tab when the popup closes; the button does not pause the video.
-- Netflix debug and automatic skips share the same player. Each completed tick is followed by a 250 ms delay.
+- Netflix debug and automatic skips share the same player. Seek requests run in order, each waiting for the previous observation before starting. Each completed tick is followed by a 250 ms delay.
 - Prime/YouTube controls are marked planned and disabled. Earlier seek probes remain in source; file playback and overlays are unimplemented. Intro/recap/next controls and preferences are also pending.
 
 ## Run
@@ -39,7 +39,7 @@ pnpm build
 
 - One skip file per video document. Disable skipping to watch normally; reload the video page to change files.
 - Empty/invalid SRT and out-of-runtime ranges fail explicitly. Loading validates playback and duration, then confirms the file without waiting for the first automatic seek.
-- Disabling prevents new automatic skips, including from a pending playback read. A seek already requested may still finish. Debug seek and overlay settings are independent of this button.
+- Disabling prevents new automatic skips, including from a pending playback read. Playback checks continue so a URL change or player failure is still reported. A seek already requested may still finish. Debug seek and overlay settings are independent of this button.
 - Paused playback stays paused; skipping begins when playback resumes.
 - A URL change or player failure ends the loop. Playback errors appear in the video page's console and the popup. While open, the popup refreshes loaded-file status once a second between actions, so later failures show without reopening it. Reload the page to restart after a failure.
 - If a status request fails, the popup keeps the filename, shows **Status unavailable**, and stops refreshing. Reopen the popup to read status again.
@@ -53,6 +53,10 @@ pnpm check
 pnpm test
 pnpm build
 ```
+
+Run these commands after code changes and fix any failures before handing off the work. `pnpm check` checks application TypeScript types, unused locals and unused parameters; it reports errors without changing source files. Use `pnpm check --watch` for continuous feedback while editing.
+
+IDE inspections, such as unresolved references to generated files or intentional local throw/catch patterns, are separate from TypeScript compiler diagnostics and need individual review.
 
 - Popup logs: right-click popup → **Inspect**.
 - Worker logs: `chrome://extensions` → Scene Skip → **service worker**.

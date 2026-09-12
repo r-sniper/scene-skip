@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Scene Skip</title>
+    <link rel="stylesheet" href="./styles.css">
+    <script type="module" src="./index.js"></script>
+  </head>
+  <body>
+    <main>
+      <header><span class="mark" aria-hidden="true">▸▸</span><h1>Scene Skip</h1></header>
+      <section class="card" aria-labelledby="platform-heading">
+        <label id="platform-heading" class="section-label" for="platform">Watching on</label>
+        <select id="platform" disabled>
+          <option value="">Select platform</option>
+          <option value="netflix">Netflix</option>
+          <option value="prime">Prime Video · Planned</option>
+          <option value="youtube">YouTube · Planned</option>
+        </select>
+        <p id="tab-title" class="tab-title">Reading current tab…</p>
+        <p id="connection-status" class="feedback" role="status" hidden></p>
+      </section>
+      <section class="card" aria-labelledby="file-heading">
+        <h2 id="file-heading">Skip scenes</h2>
+        <p id="file-help" class="hint">Load an SRT that matches this title and release.</p>
+        <div id="file-upload">
+          <input id="skip-file" class="sr-only" type="file" accept=".srt" disabled aria-describedby="file-help file-status">
+          <label class="file-picker" for="skip-file"><span>Load SRT</span><span aria-hidden="true">＋</span></label>
+        </div>
+        <div id="file-summary" hidden>
+          <p id="loaded-file" class="filename"></p>
+          <p id="file-details" class="hint"></p>
+          <div class="skip-actions">
+            <span id="skip-state" class="skip-state" role="status"></span>
+            <button id="skip-toggle" type="button" disabled>Disable skipping</button>
+          </div>
+          <p class="hint">Reload the video page to change files.</p>
+        </div>
+        <p id="file-status" class="feedback" role="status" hidden></p>
+      </section>
+      <details id="debug-panel" class="card debug-panel">
+        <summary>Debug controls<span class="chevron" aria-hidden="true">›</span></summary>
+        <div class="debug-content">
+          <form id="seek-form">
+            <fieldset id="debug-fields" disabled>
+              <label class="section-label" for="timestamp">Debug seek</label>
+              <div class="seek-row">
+                <input id="timestamp" type="text" placeholder="01:30.500" autocomplete="off" spellcheck="false" required aria-describedby="time-help time-error">
+                <button id="go" type="submit">Seek</button>
+              </div>
+              <p id="time-help" class="hint">Seconds or hh:mm:ss, with optional milliseconds.</p>
+              <p id="time-error" class="feedback" data-state="error" hidden></p>
+            </fieldset>
+          </form>
+          <p id="debug-help" class="hint">Debug controls are available on Netflix.</p>
+          <p id="seek-status" class="feedback" role="status" hidden></p>
+          <p id="observation" class="observation" hidden></p>
+          <fieldset id="overlay-fields" class="overlay-fields" disabled aria-describedby="overlay-help overlay-status">
+            <legend>In the player <span class="caption">Netflix</span></legend>
+            <label class="toggle-row" for="show-timestamp"><span>Show timestamp</span><input id="show-timestamp" type="checkbox" role="switch"></label>
+            <label class="toggle-row" for="show-segments"><span>Highlight skip segments</span><input id="show-segments" type="checkbox" role="switch" aria-describedby="segments-help"></label>
+            <p id="segments-help" class="hint">Load an SRT to show segments.</p>
+          </fieldset>
+          <p id="overlay-help" class="hint">Overlays stay on when you close this popup.</p>
+          <p id="overlay-status" class="feedback" role="status" hidden></p>
+        </div>
+      </details>
+    </main>
+  </body>
+</html>
