@@ -39,7 +39,7 @@ pnpm build
 
 - One skip file per video document. Disable skipping to watch normally; reload the video page to change files.
 - Empty/invalid SRT and out-of-runtime ranges fail explicitly. Loading validates playback and duration, then confirms the file without waiting for the first automatic seek.
-- Disabling prevents new automatic skips, including from a pending playback read. A seek already requested may still finish. Debug seek and overlay settings are independent of this button.
+- Disabling prevents new automatic skips, including from a pending playback read. Playback checks continue so a URL change or player failure is still reported. A seek already requested may still finish. Debug seek and overlay settings are independent of this button.
 - Paused playback stays paused; skipping begins when playback resumes.
 - A URL change or player failure ends the loop. Playback errors appear in the video page's console and the popup. While open, the popup refreshes loaded-file status once a second between actions, so later failures show without reopening it. Reload the page to restart after a failure.
 - If a status request fails, the popup keeps the filename, shows **Status unavailable**, and stops refreshing. Reopen the popup to read status again.

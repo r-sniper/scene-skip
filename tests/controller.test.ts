@@ -117,11 +117,11 @@ test("disabling skips retains the file and leaves playback untouched; enabling r
   const file = controller.file;
   controller.setEnabled(false);
   assert.equal(await controller.tick(), null);
-  assert.equal(reads, 0);
+  assert.equal(reads, 1);
   assert.deepEqual(controller.readSkipState(), { file, enabled: false, error: null });
   controller.setEnabled(true);
   await controller.tick();
-  assert.equal(reads, 1);
+  assert.equal(reads, 2);
   assert.deepEqual(seeks, [120]);
   assert.equal(controller.file, file);
 });

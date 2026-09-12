@@ -25,7 +25,6 @@ export class SkipEngine {
   }
 
   async tick(): Promise<SeekObservation | null> {
-    if (!this.enabled) return null;
     const playback = await this.player.readPlayback();
     this.validateDuration(playback.durationSeconds);
     if (!this.enabled) return null;
