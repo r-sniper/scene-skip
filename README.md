@@ -11,7 +11,7 @@ Netflix is the current validation target. Prime Video and YouTube features will 
 - **Netflix player overlays:** independently show the current timestamp and highlight loaded skip segments above the native seek bar. Overlay switches and the loaded filename are restored when reopening the popup.
 - **Netflix SRT loading:** select a file to automatically skip its ranges. The popup shows its filename, segment count and current skip setting.
 - **Enable / disable skipping:** use the button beside the file summary. The file and setting stay in the video tab when the popup closes; the button does not pause the video.
-- Netflix debug and automatic skips share the same player. Each completed tick is followed by a 250 ms delay.
+- Netflix debug and automatic skips share the same player. Seek requests run in order, each waiting for the previous observation before starting. Each completed tick is followed by a 250 ms delay.
 - Prime/YouTube controls are marked planned and disabled. Earlier seek probes remain in source; file playback and overlays are unimplemented. Intro/recap/next controls and preferences are also pending.
 
 ## Run

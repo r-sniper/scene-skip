@@ -20,6 +20,7 @@ declare global {
 }
 
 export class NetflixPlayerAdapter implements PlayerAdapter {
+  private static readonly pendingSeeks = new WeakMap<HTMLVideoElement, Promise<SeekObservation>>();
   readonly platform = "netflix";
   private readonly expectedUrl: string;
 
@@ -51,6 +52,18 @@ export class NetflixPlayerAdapter implements PlayerAdapter {
   }
 
   async seekTo(seconds: number): Promise<SeekObservation> {
+    const { video } = this.getPlayer();
+    const pending = NetflixPlayerAdapter.pendingSeeks.get(video);
+    const seek = pending ? pending.then(() => this.performSeek(seconds)) : this.performSeek(seconds);
+    NetflixPlayerAdapter.pendingSeeks.set(video, seek);
+    try {
+      return await seek;
+    } finally {
+      if (NetflixPlayerAdapter.pendingSeeks.get(video) === seek) NetflixPlayerAdapter.pendingSeeks.delete(video);
+    }
+  }
+
+  private async performSeek(seconds: number): Promise<SeekObservation> {
     const { player, video } = this.getPlayer();
     if (!Number.isFinite(seconds) || seconds < 0 || seconds > video.duration) {
       throw new Error("Choose a timestamp within the video's duration.");
