@@ -54,6 +54,10 @@ pnpm test
 pnpm build
 ```
 
+Run these commands after code changes and fix any failures before handing off the work. `pnpm check` checks application TypeScript types, unused locals and unused parameters; it reports errors without changing source files. Use `pnpm check --watch` for continuous feedback while editing.
+
+IDE inspections, such as unresolved references to generated files or intentional local throw/catch patterns, are separate from TypeScript compiler diagnostics and need individual review.
+
 - Popup logs: right-click popup → **Inspect**.
 - Worker logs: `chrome://extensions` → Scene Skip → **service worker**.
 - Netflix playback errors: open DevTools on the **video tab** → **Console**.
