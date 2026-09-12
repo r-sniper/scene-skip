@@ -1,0 +1,19 @@
+{
+  "manifest_version": 3,
+  "name": "Scene Skip · Dev",
+  "version": "0.0.1",
+  "minimum_chrome_version": "106",
+  "description": "Skip Netflix scenes from an SRT file, debug seeking, and inspect player timestamps and skip segments.",
+  "permissions": ["activeTab", "scripting"],
+  "action": {
+    "default_title": "Scene Skip",
+    "default_popup": "popup/index.html"
+  },
+  "background": {
+    "service_worker": "background/service-worker.js",
+    "type": "module"
+  },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'"
+  }
+}
