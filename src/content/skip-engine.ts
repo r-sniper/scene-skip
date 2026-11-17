@@ -1,4 +1,4 @@
-import type { SeekObservation, SkipPlayer, SkipRange } from "../shared/contracts.ts";
+import type { PlaybackSnapshot, SeekObservation, SkipPlayer, SkipRange } from "../shared/contracts.ts";
 import { prepareSkipIntervals } from "./skip-ranges.ts";
 import type { SkipInterval } from "./skip-ranges.ts";
 
@@ -12,20 +12,14 @@ export class SkipEngine {
     this.intervals = prepareSkipIntervals(ranges, offsetSeconds);
   }
 
-  private validateDuration(durationSeconds: number): void {
+  validateDuration(durationSeconds: number): void {
     const lastInterval = this.intervals[this.intervals.length - 1];
     if (lastInterval.endSeconds > durationSeconds) {
       throw new Error(`Skip range ends at ${lastInterval.endSeconds}s, beyond the video's ${durationSeconds}s duration.`);
     }
   }
 
-  async validate(): Promise<void> {
-    const playback = await this.player.readPlayback();
-    this.validateDuration(playback.durationSeconds);
-  }
-
-  async tick(): Promise<SeekObservation | null> {
-    const playback = await this.player.readPlayback();
+  async tick(playback: PlaybackSnapshot): Promise<SeekObservation | null> {
     this.validateDuration(playback.durationSeconds);
     if (!this.enabled) return null;
     if (playback.paused || playback.ended) return null;

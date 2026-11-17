@@ -1,5 +1,5 @@
-import type { ContentIdentity, NativeAction, PlaybackSnapshot, PlayerAdapter, SeekObservation } from "../../shared/contracts.ts";
-import { notImplemented } from "../../shared/not-implemented.ts";
+import type { PlaybackSnapshot, Player, SeekObservation } from "../../shared/contracts.ts";
+import { getNetflixContentId } from "./identity.ts";
 
 interface NetflixPlaybackApi {
   seek(milliseconds: number): void;
@@ -19,17 +19,19 @@ declare global {
   }
 }
 
-export class NetflixPlayerAdapter implements PlayerAdapter {
+export class NetflixPlayerAdapter implements Player {
   private static readonly pendingSeeks = new WeakMap<HTMLVideoElement, Promise<SeekObservation>>();
   readonly platform = "netflix";
-  private readonly expectedUrl: string;
+  private readonly expectedContentId: string;
 
   constructor(expectedUrl: string) {
-    this.expectedUrl = expectedUrl;
+    const contentId = getNetflixContentId(expectedUrl);
+    if (contentId === null) throw new Error("Open a Netflix movie or episode first.");
+    this.expectedContentId = contentId;
   }
 
   private getPlayer(): { player: NetflixPlaybackApi; video: HTMLVideoElement } {
-    if (location.href !== this.expectedUrl) throw new Error("The Netflix video changed. Reload the page and load the matching skip file.");
+    if (getNetflixContentId(location.href) !== this.expectedContentId) throw new Error("The Netflix video changed. Load the matching skip file for this title.");
     const app = window.netflix?.appContext?.state?.playerApp;
     if (!app) throw new Error("Netflix player API unavailable. Start a movie or episode first.");
     const manager = app.getAPI().videoPlayer;
@@ -41,8 +43,6 @@ export class NetflixPlayerAdapter implements PlayerAdapter {
     }
     return { player: manager.getVideoPlayerBySessionId(sessions[0]), video };
   }
-
-  readIdentity(): Promise<ContentIdentity> { notImplemented("NetflixPlayerAdapter.readIdentity"); }
 
   async readPlayback(): Promise<PlaybackSnapshot> {
     const { player, video } = this.getPlayer();
@@ -96,12 +96,8 @@ export class NetflixPlayerAdapter implements PlayerAdapter {
     });
 
     const { currentSeconds } = await this.readPlayback();
+    if (this.getPlayer().video !== video) throw new Error("The Netflix player changed while seeking.");
     if (Math.abs(currentSeconds - seconds) > 0.5) throw new Error(`Netflix sought to ${currentSeconds}s instead of ${seconds}s.`);
     return { requestedSeconds: seconds, observedSeconds: currentSeconds };
   }
-  availableActions(): NativeAction[] { notImplemented("NetflixPlayerAdapter.availableActions"); }
-  runNativeAction(_action: NativeAction): Promise<void> { notImplemented("NetflixPlayerAdapter.runNativeAction"); }
-  onContentChange(_callback: (identity: ContentIdentity) => void): () => void { notImplemented("NetflixPlayerAdapter.onContentChange"); }
-  onPlayerReplaced(_callback: () => void): () => void { notImplemented("NetflixPlayerAdapter.onPlayerReplaced"); }
-  dispose(): void { notImplemented("NetflixPlayerAdapter.dispose"); }
 }

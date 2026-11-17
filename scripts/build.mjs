@@ -12,8 +12,7 @@ await cp(new URL("../LICENSE", import.meta.url), new URL("../dist/LICENSE", impo
 await build({
   absWorkingDir: root,
   entryPoints: {
-    "popup/index": "src/popup/index.ts",
-    "background/service-worker": "src/background/service-worker.ts"
+    "popup/index": "src/popup/index.ts"
   },
   outdir: output,
   bundle: true,

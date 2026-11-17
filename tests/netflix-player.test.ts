@@ -3,8 +3,7 @@ import type { TestContext } from "node:test";
 import assert from "node:assert/strict";
 import { setImmediate } from "node:timers/promises";
 import { NetflixPlayerAdapter } from "../src/platforms/netflix/player.ts";
-import { PageSession } from "../src/content/page-session.ts";
-import { SessionController } from "../src/content/controller.ts";
+import { getNetflixContentId } from "../src/platforms/netflix/identity.ts";
 
 const url = "https://www.netflix.com/watch/1234";
 
@@ -125,99 +124,40 @@ test("Netflix seek API and media errors reject instead of reporting success", as
   await assert.rejects(fixture.player.seekTo(90), /instead of 90s/);
 });
 
-test("the debug page command uses the Netflix player implementation", async context => {
+test("Netflix content identity ignores query changes and rejects unrelated hosts and pages", async context => {
   const fixture = netflixFixture(context);
-  const result = await new PageSession(expectedUrl => new NetflixPlayerAdapter(expectedUrl)).debugSeek(90.5, url);
-  assert.deepEqual(result, { ok: true, data: { requestedSeconds: 90.5, observedSeconds: 90.5 } });
-  assert.deepEqual(fixture.seeks, [90_500]);
+  fixture.pageLocation.href = url + "?trackId=next";
+  assert.equal(getNetflixContentId(fixture.pageLocation.href), "1234");
+  assert.equal((await fixture.player.readPlayback()).currentSeconds, 8);
+  for (const address of ["https://www.netflix.com/browse", "http://www.netflix.com/watch/1234", "https://www.netflix.com.evil.test/watch/1234"]) {
+    assert.equal(getNetflixContentId(address), null);
+  }
 });
 
-test("invalid file loads do not start a loop or prevent loading a valid file afterward", async context => {
+test("a title change during a seek rejects its completion", async context => {
   const fixture = netflixFixture(context);
-  const start = context.mock.method(SessionController.prototype, "start", () => Promise.resolve());
-  const session = new PageSession(expectedUrl => new NetflixPlayerAdapter(expectedUrl));
-  const invalid = await session.loadFile("bad.srt", "bad", url);
-  assert.ok(!invalid.ok);
-  const overflow = await session.loadFile("long.srt", "1\n00:00:00,000 --> 00:11:00,000\nSong", url);
-  assert.ok(!overflow.ok);
-  assert.match(overflow.error.message, /duration/);
-  assert.deepEqual(fixture.seeks, []);
-  assert.equal(start.mock.callCount(), 0);
-  const valid = await session.loadFile("cut.srt", "1\n00:01:30,000 --> 00:02:00,000\nSong", url);
-  assert.ok(valid.ok);
-  assert.equal(valid.data.file.filename, "cut.srt");
-  assert.equal(start.mock.callCount(), 1);
+  fixture.api.seek = milliseconds => {
+    fixture.api.getCurrentTime = () => milliseconds;
+  };
+  const seeking = fixture.player.seekTo(90);
+  fixture.pageLocation.href = "https://www.netflix.com/watch/5678";
+  fixture.video.dispatchEvent(new Event("seeked"));
+  await assert.rejects(seeking, /video changed/);
 });
 
-test("file loading replies and restores its state before the first automatic seek finishes", async context => {
-  context.mock.timers.enable({ apis: ["setTimeout"] });
+test("concurrent adapters finish each observed seek before issuing the next", async context => {
   const fixture = netflixFixture(context);
-  fixture.video.paused = false;
-  fixture.api.getCurrentTime = () => 100_000;
   fixture.api.seek = milliseconds => {
     fixture.seeks.push(milliseconds);
     fixture.api.getCurrentTime = () => milliseconds;
   };
-  const session = new PageSession(expectedUrl => new NetflixPlayerAdapter(expectedUrl));
-  const loaded = await session.loadFile("cut.srt", "1\n00:01:30,000 --> 00:02:00,000\nSong", url);
-  assert.ok(loaded.ok);
-  assert.equal(loaded.data.file.filename, "cut.srt");
-  assert.deepEqual(session.getFile(), loaded.data);
-  await setImmediate();
-  assert.deepEqual(fixture.seeks, [120_000]);
-  const disabled = await session.setFileEnabled(false);
-  assert.ok(disabled.ok);
-  assert.equal(disabled.data.enabled, false);
+  const first = fixture.player.seekTo(90);
+  const second = new NetflixPlayerAdapter(url).seekTo(120);
+  assert.deepEqual(fixture.seeks, [90_000]);
   fixture.video.dispatchEvent(new Event("seeked"));
+  assert.deepEqual(await first, { requestedSeconds: 90, observedSeconds: 90 });
   await setImmediate();
-  context.mock.timers.tick(250);
-  await setImmediate();
-  assert.equal(session.getFile().enabled, false);
-  assert.equal(session.loadedFile?.filename, "cut.srt");
-  assert.deepEqual(fixture.seeks, [120_000]);
-});
-
-test("file commands reject missing files and invalid toggles, and retain the file when toggled", async context => {
-  const fixture = netflixFixture(context);
-  context.mock.method(SessionController.prototype, "start", () => Promise.resolve());
-  const session = new PageSession(expectedUrl => new NetflixPlayerAdapter(expectedUrl));
-  assert.deepEqual(session.getFile(), { file: null, enabled: false, error: null });
-  const missing = await session.setFileEnabled(true);
-  assert.ok(!missing.ok);
-  assert.match(missing.error.message, /Load an SRT/);
-  const invalid = await Reflect.apply(session.setFileEnabled, session, ["false"]);
-  assert.equal(invalid.ok, false);
-  const loaded = await session.loadFile("cut.srt", "1\n00:01:30,000 --> 00:02:00,000\nSong", url);
-  assert.ok(loaded.ok);
-  for (const enabled of [false, true, false]) {
-    const reply = await session.setFileEnabled(enabled);
-    assert.ok(reply.ok);
-    assert.deepEqual(reply.data, { ...loaded.data, enabled });
-    assert.deepEqual(session.getFile(), reply.data);
-  }
-  assert.equal(fixture.video.paused, true);
-});
-
-test("a failed first skip preserves the loaded file and exposes the error without retrying", async context => {
-  context.mock.timers.enable({ apis: ["setTimeout"] });
-  const fixture = netflixFixture(context);
-  fixture.video.paused = false;
-  fixture.api.getCurrentTime = () => 100_000;
-  fixture.api.seek = () => { throw new Error("Seek API failed"); };
-  const log = context.mock.method(console, "error", () => {});
-  const session = new PageSession(expectedUrl => new NetflixPlayerAdapter(expectedUrl));
-  const loaded = await session.loadFile("cut.srt", "1\n00:01:30,000 --> 00:02:00,000\nSong", url);
-  assert.ok(loaded.ok);
-  await setImmediate();
-  assert.equal(session.getFile().file?.filename, "cut.srt");
-  assert.equal(session.getFile().error, "Seek API failed");
-  assert.equal(log.mock.callCount(), 1);
-  assert.ok((await session.setFileEnabled(false)).ok);
-  const enabled = await session.setFileEnabled(true);
-  assert.ok(!enabled.ok);
-  assert.match(enabled.error.message, /Seek API failed.*Reload/);
-  assert.equal(session.getFile().enabled, false);
-  context.mock.timers.tick(1000);
-  await setImmediate();
-  assert.equal(log.mock.callCount(), 1);
+  assert.deepEqual(fixture.seeks, [90_000, 120_000]);
+  fixture.video.dispatchEvent(new Event("seeked"));
+  assert.deepEqual(await second, { requestedSeconds: 120, observedSeconds: 120 });
 });

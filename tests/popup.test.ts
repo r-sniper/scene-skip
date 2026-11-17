@@ -69,8 +69,12 @@ async function openPopup(sendMessage: (request: Request) => Promise<Reply<unknow
     HTMLSpanElement: FixtureElement,
     HTMLDivElement: FixtureElement,
     chrome: {
-      tabs: { query: async () => [{ id: 42, url: "https://www.netflix.com/watch/1234", title: "Netflix fixture" }] },
-      runtime: { sendMessage }
+      tabs: {
+        query: async () => [{ id: 42, url: "https://www.netflix.com/watch/1234", title: "Netflix fixture" }],
+        get: async () => ({ id: 42, url: "https://www.netflix.com/watch/1234" }),
+        sendMessage: async (_tabId: number, request: Request) => sendMessage(request)
+      },
+      scripting: { executeScript: async () => [{ frameId: 0, documentId: "popup-fixture-document" }] }
     }
   });
   await setImmediate();
@@ -92,6 +96,7 @@ function transport(initial: SkipState) {
   async function sendMessage(request: Request): Promise<Reply<unknown>> {
     requests.push(request);
     switch (request.type) {
+      case Command.SessionGet: return { ok: true, data: { currentSeconds: 8, durationSeconds: 600, paused: true, ended: false } };
       case Command.FileGet: return { ok: true, data: state };
       case Command.DebugGet: return failDebug
         ? { ok: false, error: { code: "REQUEST_FAILED", message: "Debug unavailable" } }
@@ -127,6 +132,26 @@ test("the popup replaces upload controls with the loaded filename, count and ski
   assert.equal(popup.get("skip-toggle").disabled, false);
   assert.equal(popup.get("show-segments").disabled, false);
   assert.equal(popup.get("skip-file").value, "");
+});
+
+test("opening the popup reads and displays the observed playback position", async () => {
+  const backend = transport({ file: null, enabled: false, error: null });
+  const popup = await openPopup(backend.sendMessage);
+  assert.equal(popup.get("observation").textContent, "Player reports 00:00:08.000");
+  assert.equal(popup.get("observation").hidden, false);
+  assert.equal(backend.requests.filter(request => request.type === Command.SessionGet).length, 1);
+});
+
+test("an initial playback read failure stays beside the seek controls without losing file state", async () => {
+  const backend = transport(loaded);
+  const popup = await openPopup(async request => request.type === Command.SessionGet
+    ? { ok: false, error: { code: "REQUEST_FAILED", message: "Player unavailable" } }
+    : backend.sendMessage(request));
+  assert.equal(popup.get("seek-status").textContent, "Player unavailable");
+  assert.equal(popup.get("seek-status").dataset.state, "error");
+  assert.equal(popup.get("observation").hidden, true);
+  assert.equal(popup.get("loaded-file").textContent, loaded.file.filename);
+  assert.equal(popup.get("skip-toggle").disabled, false);
 });
 
 test("the popup restores disabled skipping and its filename without relying on debug state", async () => {

@@ -1,5 +1,9 @@
 # Coding guidelines
 
+## Communication
+
+- Use hyphens (-), never em dashes, in responses and documentation.
+
 ## General
 
 - **Type safety is mandatory.** Use strict TypeScript, explicit domain types, and typed contracts between modules. Avoid `any`, `@ts-ignore`, and assertions that hide type errors; narrow `unknown` before use.

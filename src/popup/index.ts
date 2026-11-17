@@ -115,7 +115,8 @@ async function selectPlatform(): Promise<void> {
     const capabilities = getPlatformInfo(selectedPlatform).capabilities;
     await Promise.all([
       capabilities.skipFiles ? restoreFile() : Promise.resolve(),
-      capabilities.playerOverlays ? restoreDebug() : Promise.resolve()
+      capabilities.playerOverlays ? restoreDebug() : Promise.resolve(),
+      capabilities.debugSeek ? restorePlayback() : Promise.resolve()
     ]);
   }
   busy = false;
@@ -138,6 +139,16 @@ async function restoreDebug(): Promise<void> {
     renderDebug();
   } catch (error) {
     feedback(overlayStatus, errorMessage(error), "error");
+  }
+}
+
+async function restorePlayback(): Promise<void> {
+  try {
+    const playback = await call(Command.SessionGet, target());
+    observation.textContent = "Player reports " + formatTimestamp(playback.currentSeconds);
+    observation.hidden = false;
+  } catch (error) {
+    feedback(seekStatus, errorMessage(error), "error");
   }
 }
 

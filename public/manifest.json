@@ -9,10 +9,6 @@
     "default_title": "Scene Skip",
     "default_popup": "popup/index.html"
   },
-  "background": {
-    "service_worker": "background/service-worker.js",
-    "type": "module"
-  },
   "content_security_policy": {
     "extension_pages": "script-src 'self'; object-src 'self'"
   }
