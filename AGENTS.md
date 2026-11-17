@@ -1,5 +1,9 @@
 # Coding guidelines
 
+## Communication
+
+- Use hyphens (-), never em dashes, in responses and documentation.
+
 ## General
 
 - **Type safety is mandatory.** Use strict TypeScript, explicit domain types, and typed contracts between modules. Avoid `any`, `@ts-ignore`, and assertions that hide type errors; narrow `unknown` before use.
@@ -12,8 +16,14 @@
 - **Prefer self-explanatory code over comments.** Use clear names, types, and control flow. If code needs an explanation of what it does, improve the code instead of adding a comment.
 - Add a comment only to justify a non-obvious decision, external constraint, or necessary exception that the code cannot express. Do not narrate statements, repeat signatures, or label skeletons and obvious behavior. Keep architecture and future implementation plans in `ARCH.md`; preserve required license notices.
 - Unimplemented calls must fail explicitly; never return placeholder success or fabricated data.
-- Run checks appropriate to the change. Test meaningful behavior and failure paths; distinguish fixture results from live platform verification.
-- For this prototype, the user handles browser/UI testing. Run type checks, unit tests and builds unless the user asks for UI verification.
+
+## Verification after code changes
+
+- After making code changes, run `pnpm check` and fix all reported errors before considering the work complete. This checks application TypeScript types, unused locals and unused parameters.
+- Run `pnpm test` and `pnpm build` before handing off code changes, and fix any failures.
+- Fix the cause of a diagnostic; do not weaken compiler settings or add type suppressions to make checks pass.
+- Test meaningful behavior and failure paths; distinguish fixture results from live platform verification.
+- For this prototype, the user handles browser/UI testing unless they explicitly ask for UI verification. Passing automated checks does not establish live platform compatibility.
 
 ## Frontend
 

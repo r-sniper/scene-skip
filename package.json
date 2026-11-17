@@ -1,0 +1,22 @@
+{
+  "name": "scene-skip",
+  "version": "0.0.1",
+  "license": "MIT",
+  "private": true,
+  "packageManager": "pnpm@11.19.0",
+  "type": "module",
+  "description": "Chrome extension skeleton with a manual seek probe.",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "check": "tsc --noEmit",
+    "test": "node scripts/test.mjs"
+  },
+  "devDependencies": {
+    "@types/chrome": "0.2.9",
+    "esbuild": "0.28.2",
+    "typescript": "7.0.2"
+  }
+}
